@@ -157,6 +157,69 @@ const verifyToken = async (authToken)=>{
 		return {result:false}
 	}
 }
+/* Endpoint for Big Red SOS button */
+
+app.post('/emergency',async (req,res)=>{
+	const name = req.body.name
+	const user = req.body.user
+	const loc = req.body.loc
+	const token = req.cookies.token
+	const authData = await verifyToken(token)
+	if(!authData.result){
+		res.status(200).json({status:false})
+		return
+	}
+	sendTgLoc(name,loc,user)
+	//	sendAudio()
+	sendBulkMail(user,loc,name)
+	res.status(200).json({status:true})
+})
+
+/* Endpoint for Emergency Message just below the SOS button  */
+
+app.post('/sosMsg',async (req,res)=>{
+	const token = req.cookies.token
+	const authData = await verifyToken(token)
+	if(!authData.result){
+		res.status(200).json({status:false})
+		return
+	}
+	const msg = req.body.msg
+	const name = req.body.name
+	const user = req.body.user
+	const loc = req.body.loc
+	sendTgMsg(name,msg,loc,user)
+	//	sendAudio()
+	res.status(200).json({status:true})
+})
+
+/* Endpoint to send Rescue Message to User */
+
+app.post('/rescue-user',async(req,res)=>{
+	const to = req.body.to
+	const from = req.body.from
+	io.to(online[to]).emit('rescue',{'from':from})
+	res.json({result:true})
+
+})
+
+/* Endpoint to delete the User account */
+
+app.post('/delete-account',async(req,res)=>{
+	const user = req.body.user
+	const email = req.body.email
+	const query = `DELETE FROM users WHERE username = $1 AND email = $2;`
+	const value = [user,email] 
+	const {rows} = await db.query(query, value)
+	if(rows.length>=0){
+		res.json({result:true})
+	}else{
+		res.json({result:false})
+	}
+
+})
+
+
 
 
 
